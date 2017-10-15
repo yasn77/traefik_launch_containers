@@ -1,0 +1,37 @@
+version: "3"
+services:
+  traefik:
+    image: traefik
+    command: --web --docker --docker.domain=localhost.localdomain --logLevel=DEBUG
+    networks:
+      - traefik_tst
+    ports:
+      - "80:80"
+      - "8181:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/null:/traefik.toml
+    labels:
+      - "traefik.enable=false"
+
+  app-status:
+    build: .
+    networks:
+      - traefik_tst
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_tst"
+      - "traefik.backend=appstatus"
+      - "traefik.domain=foo.com"
+      - "traefik.frontend.priority=1"
+      - "traefik.appstatus.backend=appstatus"
+      - "traefik.appstatus.frontend.rule=HostRegexp:app-status.foo.com,{host:[a-zA-Z0-9-_]+}.foo.com;PathPrefix: /"
+      - "traefik.appstatus.port=80"
+
+networks:
+  traefik_tst:
+    external: true
